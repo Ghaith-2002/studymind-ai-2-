@@ -1,0 +1,8 @@
+{
+  "appId": "com.studymind.app",
+  "appName": "StudyMind",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "StudyMind AI",
+  "description": "منصة تعليمية ذكية تساعد الطلاب على الدراسة، تلخيص المحتوى، حل الأسئلة، إنشاء خطط دراسية، وتحويل الملفات التعليمية باستخدام الذكاء الاصطناعي.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

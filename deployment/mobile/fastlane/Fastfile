@@ -1,0 +1,78 @@
+# StudyMind Mobile Fastlane Automation Script
+# Location: /deployment/mobile/fastlane/Fastfile
+
+default_platform(:android)
+
+platform :android do
+  desc "Build and submit Android APK to Google Play Store Internal/Beta Track"
+  lane :deploy_beta do
+    # 1. Clean the project build directories
+    gradle(task: "clean")
+
+    # 2. Build the Android App Bundle (AAB) for production release
+    gradle(
+      task: "bundle",
+      build_type: "Release",
+      properties: {
+        "android.injected.signing.store.file" => ENV["ANDROID_KEYSTORE_PATH"],
+        "android.injected.signing.store.password" => ENV["ANDROID_KEYSTORE_PASSWORD"],
+        "android.injected.signing.key.alias" => ENV["ANDROID_KEY_ALIAS"],
+        "android.injected.signing.key.password" => ENV["ANDROID_KEY_PASSWORD"]
+      }
+    )
+
+    # 3. Upload to Google Play Developer Console (Internal Testing Track)
+    upload_to_play_store(
+      track: "internal",
+      package_name: "com.studymind.app",
+      json_key: "play-store-credentials.json",
+      aab: "build/app/outputs/bundle/release/app-release.aab"
+    )
+  end
+
+  desc "Build universal APK for direct website download"
+  lane :build_standalone_apk do
+    gradle(task: "clean")
+    gradle(
+      task: "assemble",
+      build_type: "Release",
+      properties: {
+        "android.injected.signing.store.file" => ENV["ANDROID_KEYSTORE_PATH"],
+        "android.injected.signing.store.password" => ENV["ANDROID_KEY_PASSWORD"],
+        "android.injected.signing.key.alias" => ENV["ANDROID_KEY_ALIAS"],
+        "android.injected.signing.key.password" => ENV["ANDROID_KEY_PASSWORD"]
+      }
+    )
+    # Output file will be placed in android APK directory, ready to copy to AWS S3 storage
+  end
+end
+
+platform :ios do
+  desc "Build and publish iOS application to Apple TestFlight"
+  lane :deploy_testflight do
+    # 1. Fetch iOS provisioning profiles and certificates automatically (Match)
+    match(type: "appstore", app_identifier: "com.studymind.app")
+
+    # 2. Increment iOS Build Number
+    increment_build_number(xcodeproj: "ios/Runner.xcodeproj")
+
+    # 3. Build and Archive the iOS App (.ipa)
+    build_app(
+      workspace: "ios/Runner.xcworkspace",
+      scheme: "Runner",
+      export_method: "app-store",
+      export_options: {
+        provisioningProfiles: {
+          "com.studymind.app" => "match AppStore com.studymind.app"
+        }
+      }
+    )
+
+    # 4. Upload IPA to Apple App Store Connect / TestFlight
+    upload_to_testflight(
+      username: ENV["APPLE_DEVELOPER_EMAIL"],
+      app_identifier: "com.studymind.app",
+      skip_waiting_for_build_processing: true
+    )
+  end
+end
